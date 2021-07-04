@@ -7,6 +7,7 @@ import org.w3c.dom.Element;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -177,6 +178,8 @@ public interface Sardine
 	 */
 	InputStream get(String url, Map<String, String> headers) throws IOException;
 
+	OutputStream getOutputStream(String url) throws IOException;
+
 	/**
 	 * Uses HTTP <code>PUT</code> to send data to a server. Repeatable on authentication failure.
 	 *
@@ -256,6 +259,27 @@ public interface Sardine
 	 * @throws IOException I/O error or HTTP response validation failure
 	 */
 	//void put(String url, InputStream dataStream, Map<String, String> headers) throws IOException;
+
+	/**
+	 * Uses <code>PUT</code> to send data to a server. Not repeatable
+	 * on authentication failure.
+	 *
+	 * @param url		Path to the resource including protocol and hostname
+	 * @param dataStream Input source
+	 * @throws IOException I/O error or HTTP response validation failure
+	 */
+	void put(String url, InputStream dataStream) throws IOException;
+
+	/**
+	 * Uses <code>PUT</code> to send data to a server with a specific content type header.
+	 * Not repeatable on authentication failure.
+	 *
+	 * @param url		Path to the resource including protocol and hostname
+	 * @param dataStream Input source
+	 * @param contentType	MIME type to add to the HTTP request header
+	 * @throws IOException I/O error or HTTP response validation failure
+	 */
+	void put(String url, InputStream dataStream, String contentType) throws IOException;
 
 	/**
 	 * Uses <code>PUT</code> to upload file to a server with specific contentType.
