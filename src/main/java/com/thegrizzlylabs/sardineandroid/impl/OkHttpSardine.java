@@ -44,6 +44,8 @@ import org.w3c.dom.Element;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -274,6 +276,27 @@ public class OkHttpSardine implements Sardine {
         return this.get(url, Headers.of(headers));
     }
 
+    @Override
+    public OutputStream getOutputStream(final String url) throws IOException {
+        final PipedInputStream pipedInputStream = new PipedInputStream(8192);
+        PipedOutputStreamSynchronized pipedOutputStream = new PipedOutputStreamSynchronized(pipedInputStream);
+
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    put(url, pipedInputStream, null);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        thread.start();
+
+
+        return pipedOutputStream;
+    }
+
     public InputStream get(String url, Headers headers) throws IOException {
         Request request = new Request.Builder()
                 .url(url)
@@ -294,6 +317,17 @@ public class OkHttpSardine implements Sardine {
         MediaType mediaType = contentType == null ? null : MediaType.parse(contentType);
         RequestBody requestBody = RequestBody.create(mediaType, data);
         put(url, requestBody);
+    }
+
+    @Override
+    public void put(String url, InputStream dataStream) throws IOException {
+        put(url, dataStream, null);
+    }
+
+    @Override
+    public void put(String url, InputStream dataStream, String contentType) throws IOException {
+        MediaType mediaType = contentType == null ? null : MediaType.parse(contentType);
+        put(url, new InputStreamRequestBody(dataStream, mediaType));
     }
 
     @Override

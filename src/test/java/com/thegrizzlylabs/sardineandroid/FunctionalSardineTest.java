@@ -21,16 +21,17 @@ import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine;
 import com.thegrizzlylabs.sardineandroid.impl.SardineException;
 import com.thegrizzlylabs.sardineandroid.util.SardineUtil;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -333,5 +334,52 @@ public class FunctionalSardineTest {
         assertNull(props.get(new QName("http://my.namespace.com", "mykey")));
         assertEquals(props.get(new QName(SardineUtil.CUSTOM_NAMESPACE_URI, "mykey")), "my&value2");
         assertEquals(props.get(new QName("hello", "mykey")), "my<value3");
+    }
+
+    @Test
+    public void testPutInputStream() throws Exception {
+        Sardine sardine = new OkHttpSardine();
+        final String url = WEBDAV_URL + "/" + testFolder + "/" +  UUID.randomUUID().toString();
+        byte[] data = "Test uploading with InputStream".getBytes();
+
+        sardine.put(url, new ByteArrayInputStream(data), "text/plain");
+
+        try {
+            assertTrue(sardine.exists(url));
+            assertEquals("Test uploading with InputStream", new BufferedReader(new InputStreamReader(sardine.get(url), "UTF-8")).readLine());
+        } finally {
+            sardine.delete(url);
+        }
+    }
+
+    @Test
+    public void testOutputStream() throws Exception {
+        Sardine sardine = new OkHttpSardine();
+        final String url = WEBDAV_URL + "/" + testFolder + "/" +  UUID.randomUUID().toString();
+        final int rows = 1;
+        byte[] bytes = "Test uploading with OutputStream\n".getBytes();
+        byte[] data = new byte[bytes.length*rows];
+
+        int i = 0;
+        int bi = 0;
+        while (i < rows) {
+            for (byte bt:bytes) {
+                data[bi] = bt;
+                bi++;
+            }
+            i++;
+        }
+
+        OutputStream os = sardine.getOutputStream(url);
+        os.write(data);
+        os.flush();
+        os.close();
+
+        try {
+            assertTrue(sardine.exists(url));
+            assertEquals("Test uploading with OutputStream", new BufferedReader(new InputStreamReader(sardine.get(url), "UTF-8")).readLine());
+        } finally {
+            sardine.delete(url);
+        }
     }
 }
