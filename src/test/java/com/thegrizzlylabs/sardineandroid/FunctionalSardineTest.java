@@ -382,4 +382,51 @@ public class FunctionalSardineTest {
             sardine.delete(url);
         }
     }
+
+    @Test
+    public void testPutInputStream() throws Exception {
+        Sardine sardine = new OkHttpSardine();
+        final String url = String.format("http://test.cyberduck.ch/dav/anon/sardine/%s", UUID.randomUUID().toString());
+        byte[] data = "Test uploading with InputStream".getBytes();
+
+        sardine.put(url, new ByteArrayInputStream(data), "text/plain");
+
+        try {
+            assertTrue(sardine.exists(url));
+            assertEquals("Test uploading with InputStream", new BufferedReader(new InputStreamReader(sardine.get(url), "UTF-8")).readLine());
+        } finally {
+            sardine.delete(url);
+        }
+    }
+
+    @Test
+    public void testOutputStream() throws Exception {
+        Sardine sardine = new OkHttpSardine();
+        final String url = String.format("http://test.cyberduck.ch/dav/anon/sardine/%s", UUID.randomUUID().toString());
+        final int rows = 1;
+        byte[] bytes = "Test uploading with OutputStream\n".getBytes();
+        byte[] data = new byte[bytes.length*rows];
+
+        int i = 0;
+        int bi = 0;
+        while (i < rows) {
+            for (byte bt:bytes) {
+                data[bi] = bt;
+                bi++;
+            }
+            i++;
+        }
+
+        OutputStream os = sardine.getOutputStream(url);
+        os.write(data);
+        os.flush();
+        os.close();
+
+        try {
+            assertTrue(sardine.exists(url));
+            assertEquals("Test uploading with OutputStream", new BufferedReader(new InputStreamReader(sardine.get(url), "UTF-8")).readLine());
+        } finally {
+            sardine.delete(url);
+        }
+    }
 }
